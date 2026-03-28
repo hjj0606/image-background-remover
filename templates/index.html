@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 智能抠图 - 一键去除背景</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-2xl w-full bg-white rounded-2xl shadow-xl p-8">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">AI 智能一键抠图</h1>
+            <p class="text-gray-500 mt-2">上传图片，秒变透明背景</p>
+        </div>
+
+        <div id="drop-zone" class="border-2 border-dashed border-blue-200 rounded-xl p-10 text-center hover:border-blue-400 transition-colors cursor-pointer bg-blue-50">
+            <input type="file" id="file-input" class="hidden" accept="image/*">
+            <div class="space-y-4">
+                <div class="text-5xl text-blue-400">🖼️</div>
+                <p class="text-gray-600">点击或将图片拖拽到此处</p>
+                <p class="text-xs text-gray-400">支持 JPG, PNG (最大 16MB)</p>
+            </div>
+        </div>
+
+        <div id="result-container" class="mt-8 hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 mb-2 text-center">原始图片</p>
+                    <img id="original-preview" class="rounded-lg border w-full h-48 object-contain bg-gray-100">
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500 mb-2 text-center">处理结果</p>
+                    <div id="loading-spinner" class="hidden h-48 flex items-center justify-center bg-gray-100 rounded-lg border">
+                        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+                    </div>
+                    <img id="processed-preview" class="hidden rounded-lg border w-full h-48 object-contain bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')]">
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-center">
+                <a id="download-btn" class="hidden bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg transform hover:scale-105 cursor-pointer">
+                    下载透明背景图片
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const resultContainer = document.getElementById('result-container');
+        const originalPreview = document.getElementById('original-preview');
+        const processedPreview = document.getElementById('processed-preview');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const downloadBtn = document.getElementById('download-btn');
+
+        dropZone.onclick = () => fileInput.click();
+
+        fileInput.onchange = (e) => handleFile(e.target.files[0]);
+
+        async function handleFile(file) {
+            if (!file) return;
+
+            // 显示预览
+            resultContainer.classList.remove('hidden');
+            originalPreview.src = URL.createObjectURL(file);
+            processedPreview.classList.add('hidden');
+            loadingSpinner.classList.remove('hidden');
+            downloadBtn.classList.add('hidden');
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch('/remove-bg', { method: 'POST', body: formData });
+                if (!response.ok) throw new Error('处理失败');
+
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                
+                processedPreview.src = url;
+                processedPreview.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+                
+                downloadBtn.href = url;
+                downloadBtn.download = "removed_bg.png";
+                downloadBtn.classList.remove('hidden');
+            } catch (err) {
+                alert("出错啦: " + err.message);
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
