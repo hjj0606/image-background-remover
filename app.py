@@ -1,5 +1,5 @@
 from flask import Flask, request, render_template, send_file, jsonify
-from rembg import remove
+from rembg import remove, new_session
 from PIL import Image
 import io
 import os
@@ -9,6 +9,10 @@ app = Flask(__name__)
 
 # 配置：允许上传更大的图片
 app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32MB
+
+# 使用已经下载好的轻量级模型 u2netp (4.5MB)
+# 默认会自动下载大模型(176MB)，速度太慢，这里改用小模型测试
+session = new_session(model_name='u2netp')
 
 # 首页
 @app.route('/')
@@ -31,7 +35,7 @@ def remove_bg():
         input_img = Image.open(file.stream).convert("RGBA")
 
         # 3. 去背景（核心）
-        output_img = remove(input_img)
+        output_img = remove(input_img, session=session)
 
         # 4. 生成返回图片
         img_bytes = io.BytesIO()
